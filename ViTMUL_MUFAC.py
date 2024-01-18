@@ -270,40 +270,48 @@ def main(args):
     unseen_meta_data = pd.read_csv(unseen_meta_data_path)
     unseen_image_directory = "./custom_korean_family_dataset_resolution_128/test_images"
 
-    train_transform = transforms.Compose([
-        transforms.Resize(128),
-        transforms.RandomHorizontalFlip(),
-        transforms.RandomAffine(0, shear=10, scale=(0.8, 1.2)),
-        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
-        transforms.ToTensor()
-    ])
+#     train_transform = transforms.Compose([
+#         transforms.Resize(128),
+#         transforms.RandomHorizontalFlip(),
+#         transforms.RandomAffine(0, shear=10, scale=(0.8, 1.2)),
+#         transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
+#         transforms.ToTensor()
+#     ])
 
-    test_transform = transforms.Compose([
-        transforms.Resize(128),
-        transforms.ToTensor()
-    ])
+#     test_transform = transforms.Compose([
+#         transforms.Resize(128),
+#         transforms.ToTensor()
+#     ])
 
-    unseen_transform = transforms.Compose([
-        transforms.Resize(128),
-        transforms.ToTensor()
-    ])
+#     unseen_transform = transforms.Compose([
+#         transforms.Resize(128),
+#         transforms.ToTensor()
+#     ])
     
     # From mPLUG
+    from torchvision import transforms
+    from randaugment import RandomAugment
+    normalize = transforms.Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711))
     
-#     train_transform_mplug = transforms.Compose([                        
-#             transforms.RandomResizedCrop(config['image_res'],scale=(0.5, 1.0), interpolation=Image.BICUBIC),
-#             transforms.RandomHorizontalFlip(),
-#             RandomAugment(2,7,isPIL=True,augs=['Identity','AutoContrast','Equalize','Brightness','Sharpness',
-#                                               'ShearX', 'ShearY', 'TranslateX', 'TranslateY', 'Rotate']),     
-#             transforms.ToTensor(),
-#             normalize,
-#         ])  
+    train_transform = transforms.Compose([                        
+            transforms.RandomResizedCrop(128,scale=(0.5, 1.0), interpolation=Image.BICUBIC),
+            transforms.RandomHorizontalFlip(),
+            RandomAugment(2,7,isPIL=True,augs=['Identity','AutoContrast','Equalize','Brightness','Sharpness',
+                                              'ShearX', 'ShearY', 'TranslateX', 'TranslateY', 'Rotate']),     
+            transforms.ToTensor(),
+            normalize,
+        ])  
     
-#     test_transform_mplug = transforms.Compose([
-#         transforms.Resize((config['image_res'],config['image_res']),interpolation=Image.BICUBIC),
-#         transforms.ToTensor(),
-#         normalize,
-#         ])  
+    test_transform = transforms.Compose([
+        transforms.Resize((128,128),interpolation=Image.BICUBIC),
+        transforms.ToTensor(),
+        normalize,
+        ])  
+    unseen_transform = transforms.Compose([
+        transforms.Resize((128,128),interpolation=Image.BICUBIC),
+        transforms.ToTensor(),
+        normalize,
+        ])  
     
     
     train_dataset = Dataset(train_meta_data, train_image_directory, train_transform)
@@ -355,7 +363,7 @@ def main(args):
         
         set_seed(seed)
         
-        model = ViT_unlearning()
+        model = ViT_unlearning(model_type=args.model_type)
         model = model.cuda()
         
         criterion = nn.CrossEntropyLoss()
@@ -363,10 +371,10 @@ def main(args):
         new_file_num = 0 
         os.makedirs(f'./results', exist_ok = True)
         
-        while os.path.exists(f'./results/MUFAC_{args.model_type}_seed_{seed}_output_{new_file_num}.tsv'):
+        while os.path.exists(f'./results/MUFAC_{args.model_type}_{args.training_type}_seed_{seed}_output_{new_file_num}.tsv'):
             new_file_num += 1
         
-        result_file = f'./results/MUFAC_{args.model_type}_seed_{seed}_output_{new_file_num}.tsv'
+        result_file = f'./results/MUFAC_{args.model_type}_{args.training_type}_seed_{seed}_output_{new_file_num}.tsv'
         print('='*77)
         print('results saved at: ', result_file)
         print('='*77)
@@ -376,14 +384,24 @@ def main(args):
             save_results.writerow('')
             
             
-        # args.model_type
+        # args.training_type
         print('-'*77)
-        if args.model_type.lower() in ['teacher']:
+        if args.training_type.lower() in ['teacher']:
             used_data_loader = train_dataloader
-            print(f'Using model type: {args.model_type}')
-        elif args.model_type.lower() in ['retrain', 'finetune', 'cf3']:
+            print(f'Using model type: {args.training_type}')
+        elif args.training_type.lower() in ['retrain']:
             used_data_loader = retain_dataloader_train
-            print(f'Using model type: {args.model_type}')
+            print(f'Using model type: {args.training_type}')
+        elif args.training_type.lower() in ['finetune', 'cf3']:
+            used_data_loader = retain_dataloader_train
+            assert args.checkpoint != None
+            print(f'Using model type: {args.training_type}')
+            
+            print(f'Loading checkpoint from {args.checkpoint}')
+            model.load_state_dict(torch.load(args.checkpoint))
+            test_acc_0 = evaluation(model, test_dataloader, criterion)
+            print(f'Checking the test accuracy of the loaded pre-trained model: {100*test_acc_0["Acc"]: .2f}.')
+        
             
             
         # args.optimizer
@@ -406,9 +424,17 @@ def main(args):
             optimizer = create_optimizer(arg_opt, model)
             print(f'Using optimizer: {args.optimizer.lower()}')
             
+            
+        if args.training_type.lower() == 'cf3':
+            for name, param in model.named_parameters():
+                if "visual_encoder.visual.transformer.resblocks.11." in name or "visual_encoder.visual.transformer.resblocks.10." in name or "visual_encoder.visual.transformer.resblocks.9." in name or name == 'fc.weight' or name == 'fc.bias' or 'visual_encoder.visual.ln_post' in name:
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+            
         
-#         for name, param in model.named_parameters():
-#             print(f'name: {name}, requires_grad: {param.requires_grad}')
+        for name, param in model.named_parameters():
+            print(f'name: {name}, requires_grad: {param.requires_grad}')
         
         
         dataloader_iterator = iter(forget_dataloader_train)
@@ -419,6 +445,7 @@ def main(args):
         best_NoMUS_Util = 0
         best_NoMUS_forget = 0
         best_NoMUS_forget_acc = 0
+        best_NoMUS_epoch = 0
         tie = False
         
         best_test_acc = 0
@@ -444,7 +471,7 @@ def main(args):
                     
                     
             for batch_idx, (x_, y_) in enumerate(tqdm(used_data_loader, 
-                                                      desc=f"{args.model_type} (Seed: {seed}, Epoch: {epoch})")):
+                                                      desc=f"{args.model_type}-{args.training_type} (Seed: {seed}, Epoch: {epoch})")):
                 y_ = y_.cuda()
                 
                 outputs_ = model(x_.cuda())
@@ -475,7 +502,8 @@ def main(args):
                 best_NoMUS_forget = 100*mia['Forgeting Score']
                 best_NoMUS_forget_acc = 100*forget_acc['Acc']
                 tie = False
-            elif test_acc['Acc'] == best_NoMUS:
+                best_NoMUS_epoch = epoch
+            elif 100*(test_acc['Acc'] + (1 - abs(mia['MIA'] - 0.5) * 2)) / 2 == best_NoMUS:
                 tie = True
                 
             print('-'*77)
@@ -486,10 +514,13 @@ def main(args):
             print(f"NoMUS score: {100*(test_acc['Acc'] + (1 - abs(mia['MIA'] - 0.5) * 2)) / 2 : .2f}")
             print('-'*77)
             print(f"Best NoMUS score so far: {best_NoMUS: .2f} / Util: {best_NoMUS_Util: .2f} / Forget: {best_NoMUS_forget : .2f} / Forget Acc: {best_NoMUS_forget_acc : .2f}")
+            print(f"Best NoMUS epoch: {best_NoMUS_epoch}")
             print(f"Exists tie: {tie}")
             print('-'*77)
             if test_acc['Acc'] > best_test_acc:
                 best_test_acc = test_acc['Acc'] 
+                if args.training_type.lower() == 'teacher' and args.save_teacher == True:
+                    torch.save(model.state_dict(), f'MUFAC_{args.model_type}_teacher_seed_{seed}.pth')
             print(f'Best test acc so far: {100*best_test_acc: .2f}')
             print('-'*77)
             
@@ -564,13 +595,17 @@ if __name__ == '__main__':
     parser.add_argument('--optimizer', default='adamw', type=str)
     parser.add_argument('--manual_decay', default = True, type = boolean_string)
     parser.add_argument('--num_epochs', default=10, type=int)
-    parser.add_argument('--model_type', default='teacher', type=str)
+    parser.add_argument('--model_type', default='ViT-B-16', type=str)
+    parser.add_argument('--training_type', default='teacher', type=str)
+    parser.add_argument('--save_teacher', default = False, type = boolean_string)
+    parser.add_argument('--cf3_top_n', default = 3, type = int)
+    
     
     parser.add_argument('--seeds',
                         type=lambda s: [int(item) for item in s.split(',')],
                         default = None,
                         help='random seeds')
-    parser.add_argument('--checkpoint', default='./pre_trained_last_checkpoint_epoch_30.pth')
+    parser.add_argument('--checkpoint', default=None)
     parser.add_argument('--learning_rate', default = 0.001, type = float)
     parser.add_argument('--momentum', default=None, type = float)
     

@@ -270,48 +270,49 @@ def main(args):
     unseen_meta_data = pd.read_csv(unseen_meta_data_path)
     unseen_image_directory = "./custom_korean_family_dataset_resolution_128/test_images"
 
-#     train_transform = transforms.Compose([
-#         transforms.Resize(128),
-#         transforms.RandomHorizontalFlip(),
-#         transforms.RandomAffine(0, shear=10, scale=(0.8, 1.2)),
-#         transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
-#         transforms.ToTensor()
-#     ])
-
-#     test_transform = transforms.Compose([
-#         transforms.Resize(128),
-#         transforms.ToTensor()
-#     ])
-
-#     unseen_transform = transforms.Compose([
-#         transforms.Resize(128),
-#         transforms.ToTensor()
-#     ])
-    
-    # From mPLUG
-    from torchvision import transforms
-    from randaugment import RandomAugment
-    normalize = transforms.Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711))
-    
-    train_transform = transforms.Compose([                        
-            transforms.RandomResizedCrop(128,scale=(0.5, 1.0), interpolation=Image.BICUBIC),
+    if args.transform == 1:
+        train_transform = transforms.Compose([
+            transforms.Resize(128),
             transforms.RandomHorizontalFlip(),
-            RandomAugment(2,7,isPIL=True,augs=['Identity','AutoContrast','Equalize','Brightness','Sharpness',
-                                              'ShearX', 'ShearY', 'TranslateX', 'TranslateY', 'Rotate']),     
+            transforms.RandomAffine(0, shear=10, scale=(0.8, 1.2)),
+            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
+            transforms.ToTensor()
+        ])
+
+        test_transform = transforms.Compose([
+            transforms.Resize(128),
+            transforms.ToTensor()
+        ])
+
+        unseen_transform = transforms.Compose([
+            transforms.Resize(128),
+            transforms.ToTensor()
+        ])
+    elif args.transform == 2:
+        # From mPLUG
+        from torchvision import transforms
+        from randaugment import RandomAugment
+        normalize = transforms.Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711))
+
+        train_transform = transforms.Compose([                        
+                transforms.RandomResizedCrop(128,scale=(0.5, 1.0), interpolation=Image.BICUBIC),
+                transforms.RandomHorizontalFlip(),
+                RandomAugment(2,7,isPIL=True,augs=['Identity','AutoContrast','Equalize','Brightness','Sharpness',
+                                                  'ShearX', 'ShearY', 'TranslateX', 'TranslateY', 'Rotate']),     
+                transforms.ToTensor(),
+                normalize,
+            ])  
+
+        test_transform = transforms.Compose([
+            transforms.Resize((128,128),interpolation=Image.BICUBIC),
             transforms.ToTensor(),
             normalize,
-        ])  
-    
-    test_transform = transforms.Compose([
-        transforms.Resize((128,128),interpolation=Image.BICUBIC),
-        transforms.ToTensor(),
-        normalize,
-        ])  
-    unseen_transform = transforms.Compose([
-        transforms.Resize((128,128),interpolation=Image.BICUBIC),
-        transforms.ToTensor(),
-        normalize,
-        ])  
+            ])  
+        unseen_transform = transforms.Compose([
+            transforms.Resize((128,128),interpolation=Image.BICUBIC),
+            transforms.ToTensor(),
+            normalize,
+            ])  
     
     
     train_dataset = Dataset(train_meta_data, train_image_directory, train_transform)
@@ -388,14 +389,14 @@ def main(args):
         print('-'*77)
         if args.training_type.lower() in ['teacher']:
             used_data_loader = train_dataloader
-            print(f'Using model type: {args.training_type}')
+            print(f'Using training type: {args.training_type}')
         elif args.training_type.lower() in ['retrain']:
             used_data_loader = retain_dataloader_train
-            print(f'Using model type: {args.training_type}')
+            print(f'Using training type: {args.training_type}')
         elif args.training_type.lower() in ['finetune', 'cf3']:
             used_data_loader = retain_dataloader_train
             assert args.checkpoint != None
-            print(f'Using model type: {args.training_type}')
+            print(f'Using training type: {args.training_type}')
             
             print(f'Loading checkpoint from {args.checkpoint}')
             model.load_state_dict(torch.load(args.checkpoint))
@@ -597,6 +598,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_epochs', default=10, type=int)
     parser.add_argument('--model_type', default='ViT-B-16', type=str)
     parser.add_argument('--training_type', default='teacher', type=str)
+    parser.add_argument('--transform', default = 2, type = int)
     parser.add_argument('--save_teacher', default = False, type = boolean_string)
     parser.add_argument('--cf3_top_n', default = 3, type = int)
     

@@ -37,11 +37,11 @@ def resize_pos_embed(posemb, posemb_new):
     return posemb
 
 
-def initialize_clip(config, num_patches=240):
+def initialize_clip(config, model_type = None, num_patches=240):
     from models_ViT.clip import clip
     
     # Manual configs for init.
-    clip_name = "ViT-B-16"
+    clip_name = model_type
     
     if clip_name == "ViT-B-16":
         clip_model, preprocess = clip.load("ViT-B-16.tar", jit=False)
@@ -49,7 +49,7 @@ def initialize_clip(config, num_patches=240):
         pos_embed = nn.Parameter(torch.zeros(num_patches + 1, 768).float())
     elif clip_name == "ViT-L-14":
         clip_model, preprocess = clip.load("ViT-L-14.tar", jit=False)
-        num_patches = int(config['image_res']*config['image_res']/(14*14))
+        num_patches = int(128*128/(14*14))
         pos_embed = nn.Parameter(torch.zeros(num_patches + 1, 1024).float())    
     pos_embed.weight = resize_pos_embed(clip_model.visual.positional_embedding.unsqueeze(0), pos_embed.unsqueeze(0))
     clip_model.visual.positional_embedding = pos_embed

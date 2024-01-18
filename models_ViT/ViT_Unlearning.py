@@ -13,14 +13,15 @@ import numpy as np
 class ViT_unlearning(nn.Module):
     def __init__(self,                 
                  tokenizer = None,
-                 config = None
+                 config = None,
+                 model_type = None,
                  ):
         super().__init__()
         
         self.tokenizer = tokenizer 
 #         self.module_setting(config)
-        self.visual_encoder, _ = initialize_clip(config)
-        self.fc = nn.Linear(768, 8)
+        self.visual_encoder, _ = initialize_clip(config, model_type)
+        self.fc = nn.Linear(768, 8) if model_type == 'ViT-B-16' else nn.Linear(1024, 8)
         
         self.use_checkpoint = False
         

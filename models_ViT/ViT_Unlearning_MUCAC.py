@@ -1,8 +1,7 @@
 from functools import partial
 from models_ViT.vit import VisionTransformer
-from models_ViT.modeling_mplug import BertConfig, BertModel, BertPrefixModel, FusionModel
+from transformers.models.bert.configuration_bert import BertConfig
 from models_ViT.visual_transformers import initialize_clip
-from models_ViT.predictor import TextGenerator
 
 import torch
 from torch import nn
@@ -22,14 +21,15 @@ class MultiLabelHead(nn.Module):
 class ViT_unlearning_MUCAC(nn.Module):
     def __init__(self,                 
                  tokenizer = None,
-                 config = None
+                 config = None,
+                 model_type = None,
                  ):
         super().__init__()
         
         self.tokenizer = tokenizer 
 #         self.module_setting(config)
-        self.visual_encoder, _ = initialize_clip(config)
-        self.fc = MultiLabelHead(768, 3)
+        self.visual_encoder, _ = initialize_clip(config, model_type)
+        self.fc = MultiLabelHead(768, 3) if model_type == 'ViT-B-16' else MultiLabelHead(1024, 3)
         
         self.use_checkpoint = True
         

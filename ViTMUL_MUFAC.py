@@ -434,8 +434,8 @@ def main(args):
                     param.requires_grad = False
             
         
-        for name, param in model.named_parameters():
-            print(f'name: {name}, requires_grad: {param.requires_grad}')
+#         for name, param in model.named_parameters():
+#             print(f'name: {name}, requires_grad: {param.requires_grad}')
         
         
         dataloader_iterator = iter(forget_dataloader_train)
@@ -561,30 +561,29 @@ def main(args):
         print(f'nomus: {nomus_seed}')
         print('-'*77)
         print(f'Avg: {round(sum(nomus_seed)/len(nomus_seed), 3)}, std: {np.std(nomus_seed, ddof =1)}')
-        print('-'*77)
-        print('-'*77)
-        print(f'Best test acc so far: {100*best_test_acc: .2f}')
-        print('-'*77)
-        print('-'*77)
-    epoch_results = [{'utility': [0.0]*len(args.seeds), 
-                     'forgetting': [0.0]*len(args.seeds),
-                     'nomus': [0.0]*len(args.seeds)} for _ in range(args.num_epochs)]
+        print('='*77)
+        print(f"Best NoMUS score so far: {best_NoMUS: .2f} / Util: {best_NoMUS_Util: .2f} / Forget: {best_NoMUS_forget : .2f} / Forget Acc: {best_NoMUS_forget_acc : .2f}")
+        print('='*77)
+        
+#     epoch_results = [{'utility': [0.0]*len(args.seeds), 
+#                      'forgetting': [0.0]*len(args.seeds),
+#                      'nomus': [0.0]*len(args.seeds)} for _ in range(args.num_epochs)]
     
-    for j, item in enumerate(final_results):
-        for ep in range(args.num_epochs):
-            epoch_results[ep]['utility'][j] = round(item['utility'][ep], 2)
-            epoch_results[ep]['forgetting'][j] = round(item['forgetting'][ep], 2)
-            epoch_results[ep]['nomus'][j] = round(item['nomus'][ep], 2)
+#     for j, item in enumerate(final_results):
+#         for ep in range(args.num_epochs):
+#             epoch_results[ep]['utility'][j] = round(item['utility'][ep], 2)
+#             epoch_results[ep]['forgetting'][j] = round(item['forgetting'][ep], 2)
+#             epoch_results[ep]['nomus'][j] = round(item['nomus'][ep], 2)
             
             
-    print('='*77)
-    print('Results per epoch: ')
-    for j in range(args.num_epochs):
-        print('-'*77)
-        print(f'epoch {j} results')
-        print(f'utility: {epoch_results[j]["utility"]}, avg: {round(sum(epoch_results[j]["utility"])/len(epoch_results[j]["utility"]), 2)}, std: {np.std(epoch_results[j]["utility"], ddof =1)}')
-        print(f'forgetting: {epoch_results[j]["forgetting"]}, avg: {round(sum(epoch_results[j]["forgetting"])/len(epoch_results[j]["forgetting"]), 2)}, std: {np.std(epoch_results[j]["forgetting"], ddof =1)}')
-        print(f'nomus: {epoch_results[j]["nomus"]}, avg: {round(sum(epoch_results[j]["nomus"])/len(epoch_results[j]["nomus"]), 2)}, std: {np.std(epoch_results[j]["nomus"], ddof =1)}')
+#     print('='*77)
+#     print('Results per epoch: ')
+#     for j in range(args.num_epochs):
+#         print('-'*77)
+#         print(f'epoch {j} results')
+#         print(f'utility: {epoch_results[j]["utility"]}, avg: {round(sum(epoch_results[j]["utility"])/len(epoch_results[j]["utility"]), 2)}, std: {np.std(epoch_results[j]["utility"], ddof =1)}')
+#         print(f'forgetting: {epoch_results[j]["forgetting"]}, avg: {round(sum(epoch_results[j]["forgetting"])/len(epoch_results[j]["forgetting"]), 2)}, std: {np.std(epoch_results[j]["forgetting"], ddof =1)}')
+#         print(f'nomus: {epoch_results[j]["nomus"]}, avg: {round(sum(epoch_results[j]["nomus"])/len(epoch_results[j]["nomus"]), 2)}, std: {np.std(epoch_results[j]["nomus"], ddof =1)}')
         
 def boolean_string(s):
     if s not in {'False', 'True'}:

@@ -55,6 +55,42 @@ def initialize_clip(config, model_type = None, num_patches=240):
     clip_model.visual.positional_embedding = pos_embed
     return clip_model, preprocess
 
+def initialize_clip_moe(config, model_type = None, num_patches=240):
+    from models_ViT.clip import clip
+    
+    # Manual configs for init.
+    clip_name = model_type
+    
+    if clip_name == "ViT-B-16":
+        clip_model, preprocess = clip.load_moe("ViT-B-16.tar", jit=False)
+        num_patches = int(128*128/(16*16))
+        pos_embed = nn.Parameter(torch.zeros(num_patches + 1, 768).float())
+    elif clip_name == "ViT-L-14":
+        clip_model, preprocess = clip.load_moe("ViT-L-14.tar", jit=False)
+        num_patches = int(128*128/(14*14))
+        pos_embed = nn.Parameter(torch.zeros(num_patches + 1, 1024).float())    
+    pos_embed.weight = resize_pos_embed(clip_model.visual.positional_embedding.unsqueeze(0), pos_embed.unsqueeze(0))
+    clip_model.visual.positional_embedding = pos_embed
+    return clip_model, preprocess
+
+def initialize_clip_ER(config, model_type = None, num_patches=240):
+    from models_ViT.clip import clip
+    
+    # Manual configs for init.
+    clip_name = model_type
+    
+    if clip_name == "ViT-B-16":
+        clip_model, preprocess = clip.load_ER("ViT-B-16.tar", jit=False)
+        num_patches = int(128*128/(16*16))
+        pos_embed = nn.Parameter(torch.zeros(num_patches + 1, 768).float())
+    elif clip_name == "ViT-L-14":
+        clip_model, preprocess = clip.load_ER("ViT-L-14.tar", jit=False)
+        num_patches = int(128*128/(14*14))
+        pos_embed = nn.Parameter(torch.zeros(num_patches + 1, 1024).float())    
+    pos_embed.weight = resize_pos_embed(clip_model.visual.positional_embedding.unsqueeze(0), pos_embed.unsqueeze(0))
+    clip_model.visual.positional_embedding = pos_embed
+    return clip_model, preprocess
+
 
 def initialize_vit(VISUAL_CONFIG, model_type="ViT-B_32", pretrained_dir="data/ViT-B_32.npz", img_size=(384, 640),
                    num_patches=240):

@@ -73,18 +73,18 @@ def initialize_clip_moe(config, model_type = None, num_patches=240):
     clip_model.visual.positional_embedding = pos_embed
     return clip_model, preprocess
 
-def initialize_clip_ER(config, model_type = None, num_patches=240):
+def initialize_clip_ER(config, model_type = None, num_patches=240, DASH_layer = 4):
     from models_ViT.clip import clip
     
     # Manual configs for init.
     clip_name = model_type
     
     if clip_name == "ViT-B-16":
-        clip_model, preprocess = clip.load_ER("ViT-B-16.tar", jit=False)
+        clip_model, preprocess = clip.load_ER("ViT-B-16.tar", DASH_layer = DASH_layer, jit=False)
         num_patches = int(128*128/(16*16))
         pos_embed = nn.Parameter(torch.zeros(num_patches + 1, 768).float())
     elif clip_name == "ViT-L-14":
-        clip_model, preprocess = clip.load_ER("ViT-L-14.tar", jit=False)
+        clip_model, preprocess = clip.load_ER("ViT-L-14.tar", DASH_layer = DASH_layer, jit=False)
         num_patches = int(128*128/(14*14))
         pos_embed = nn.Parameter(torch.zeros(num_patches + 1, 1024).float())    
     pos_embed.weight = resize_pos_embed(clip_model.visual.positional_embedding.unsqueeze(0), pos_embed.unsqueeze(0))

@@ -208,11 +208,12 @@ class Transformer(nn.Module):
         return x
 
 class Transformer_ER(nn.Module):
-    def __init__(self, width: int, layers: int, heads: int, attn_mask: torch.Tensor = None):
+    def __init__(self, width: int, layers: int, heads: int, attn_mask: torch.Tensor = None, DASH_layer: int = 3):
         super().__init__()
         self.width = width
         self.layers = layers
         self.resblocks = nn.Sequential(*[ResidualAttentionBlock(width, heads, attn_mask) for _ in range(layers)])
+        self.DASH_layer = DASH_layer
         
     def forward(self, x: torch.Tensor, text_mask=None, use_checkpoint=True):
         for layer in self.resblocks:
@@ -224,7 +225,7 @@ class Transformer_ER(nn.Module):
     
     def forward_ER(self, x: torch.Tensor, text_mask=None, use_checkpoint=True):
         for i, layer in enumerate(self.resblocks):
-            if i < 9:
+            if i < self.DASH_layer:
                 if use_checkpoint:
                     x = torch.utils.checkpoint.checkpoint(layer, x , text_mask)
                 else:
@@ -244,7 +245,8 @@ class Transformer_ER(nn.Module):
         return x
 
 class VisualTransformer_ER(nn.Module):
-    def __init__(self, input_resolution: int, patch_size: int, width: int, layers: int, heads: int, output_dim: int):
+    def __init__(self, input_resolution: int, patch_size: int, width: int, layers: int, heads: int, output_dim: int,
+                 DASH_layer: int):
         super().__init__()
         self.input_resolution = input_resolution
         self.output_dim = output_dim
@@ -256,7 +258,7 @@ class VisualTransformer_ER(nn.Module):
         self.positional_embedding = nn.Parameter(scale * torch.randn((input_resolution // patch_size) ** 2 + 1, width))
         self.ln_pre = LayerNorm(width)
 
-        self.transformer = Transformer_ER(width, layers, heads)
+        self.transformer = Transformer_ER(width, layers, heads, DASH_layer = DASH_layer)
 
         self.ln_post = LayerNorm(width)
         self.proj = nn.Parameter(scale * torch.randn(width, output_dim))
@@ -316,7 +318,8 @@ class CLIP(nn.Module):
                  vocab_size: int,
                  transformer_width: int,
                  transformer_heads: int,
-                 transformer_layers: int
+                 transformer_layers: int,
+                 DASH_layer: int,
                  ):
         super().__init__()
 
@@ -339,7 +342,8 @@ class CLIP(nn.Module):
                 width=vision_width,
                 layers=vision_layers,
                 heads=vision_heads,
-                output_dim=embed_dim
+                output_dim=embed_dim,
+                DASH_layer = DASH_layer
             )
 
         self.transformer = Transformer(
@@ -459,7 +463,7 @@ def convert_weights(model: nn.Module):
     model.apply(_convert_weights_to_fp16)
 
 
-def build_model_ER(state_dict: dict):
+def build_model_ER(state_dict: dict, DASH_layer: int):
     vit = "visual.proj" in state_dict or "module.bert.encoder.visual_model.visual.proj" in state_dict
     # if args.use_clip_visual:
     if "module.bert.encoder.visual_model.visual.proj" in state_dict:
@@ -493,7 +497,8 @@ def build_model_ER(state_dict: dict):
     model = CLIP(
         embed_dim,
         image_resolution, vision_layers, vision_width, vision_patch_size,
-        context_length, vocab_size, transformer_width, transformer_heads, transformer_layers
+        context_length, vocab_size, transformer_width, transformer_heads, transformer_layers,
+        DASH_layer = DASH_layer
     )
 
     for key in ["input_resolution", "context_length", "vocab_size"]:

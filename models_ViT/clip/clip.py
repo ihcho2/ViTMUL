@@ -226,7 +226,7 @@ def load_moe(name: str, device: Union[str, torch.device] = "cuda" if torch.cuda.
 
 
 def load_ER(name: str, device: Union[str, torch.device] = "cuda" if torch.cuda.is_available() else "cpu",
-         jit: bool = False, download_root: str = None):
+         jit: bool = False, download_root: str = None, DASH_layer: int = 3):
     if name in _MODELS:
         model_path = _download(_MODELS[name], download_root or os.path.expanduser("~/.cache/clip"))
     elif os.path.isfile(name):
@@ -244,7 +244,7 @@ def load_ER(name: str, device: Union[str, torch.device] = "cuda" if torch.cuda.i
             warnings.warn(f"File {model_path} is not a JIT archive. Loading as a state dict instead")
             jit = False
         state_dict = torch.load(model_path, map_location="cpu")
-        model = build_model_ER(state_dict)#.to(device)
+        model = build_model_ER(state_dict, DASH_layer = DASH_layer)#.to(device)
         
     n_px = model.visual.input_resolution
 

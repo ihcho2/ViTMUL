@@ -23,12 +23,13 @@ class ViT_unlearning_ER(nn.Module):
                  tokenizer = None,
                  config = None,
                  model_type = None,
+                 DASH_layer = None,
                  ):
         super().__init__()
         
         self.tokenizer = tokenizer 
 #         self.module_setting(config)
-        self.visual_encoder, _ = initialize_clip_ER(config, model_type)
+        self.visual_encoder, _ = initialize_clip_ER(config, model_type, DASH_layer = DASH_layer)
 #         self.fc = nn.Linear(768, 8) if model_type == 'ViT-B-16' else nn.Linear(1024, 8)
         self.fc = MultiLabelHead(768, 3) if model_type == 'ViT-B-16' else MultiLabelHead(1024, 3)
         

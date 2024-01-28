@@ -498,7 +498,7 @@ class SCRUBTraining:
                 outputs_teacher = self.teacher(inputs)
                 
             # We want to maximize the divergence for the forget data.
-            loss_div_forget = -0.001*self.criterion_div(outputs_student, outputs_teacher)
+            loss_div_forget = -args.coefficient*self.criterion_div(outputs_student, outputs_teacher)
             total_loss_forget += loss_div_forget.item()
             
             # Backward pass
@@ -767,7 +767,7 @@ if __name__ == '__main__':
     parser.add_argument('--transform', default = 2, type = int)
     parser.add_argument('--save_teacher', default = False, type = boolean_string)
     parser.add_argument('--cf3_top_n', default = 3, type = int)
-    
+    parser.add_argument('--coefficient', default=None, type = float)
     
     parser.add_argument('--seeds',
                         type=lambda s: [int(item) for item in s.split(',')],

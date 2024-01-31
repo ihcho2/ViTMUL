@@ -498,7 +498,7 @@ def main(args):
                 loss_forget = -criterion(outputs_forget, y_forget.cuda())
 
                 # Overall loss
-                joint_loss = loss_retain + 0.1*loss_forget
+                joint_loss = loss_retain + args.coefficient*loss_forget
                 
                 optimizer.zero_grad()
                 joint_loss.backward()
@@ -617,6 +617,7 @@ if __name__ == '__main__':
     parser.add_argument('--training_type', default='teacher', type=str)
     parser.add_argument('--transform', default = 2, type = int)
     parser.add_argument('--save_teacher', default = False, type = boolean_string)
+    parser.add_argument('--cf3_top_n', default = 3, type = int)
     parser.add_argument('--cf3_top_n', default = 3, type = int)
     
     

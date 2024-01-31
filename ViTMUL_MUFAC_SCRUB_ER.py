@@ -254,7 +254,7 @@ class DistillKL(nn.Module):
         p_t = F.softmax(y_t/self.T, dim=1)
         loss = F.kl_div(p_s, p_t, size_average=False) * (self.T**2) / y_s.shape[0]
         return loss
-
+    
 class SCRUBTraining:
     def __init__(self, teacher, student, retain_dataloader, forget_dataloader, optimizer):
         self.teacher = teacher
@@ -628,14 +628,14 @@ def main(args):
 #     epoch_results = [{'utility': [0.0]*len(args.seeds), 
 #                      'forgetting': [0.0]*len(args.seeds),
 #                      'nomus': [0.0]*len(args.seeds)} for _ in range(args.num_epochs)]
-
+    
 #     for j, item in enumerate(final_results):
 #         for ep in range(args.num_epochs):
 #             epoch_results[ep]['utility'][j] = round(item['utility'][ep], 2)
 #             epoch_results[ep]['forgetting'][j] = round(item['forgetting'][ep], 2)
 #             epoch_results[ep]['nomus'][j] = round(item['nomus'][ep], 2)
-
-
+            
+            
 #     print('='*77)
 #     print('Results per epoch: ')
 #     for j in range(args.num_epochs):
@@ -660,7 +660,7 @@ if __name__ == '__main__':
     parser.add_argument('--transform', default = 2, type = int)
     parser.add_argument('--save_teacher', default = False, type = boolean_string)
     parser.add_argument('--cf3_top_n', default = 3, type = int)
-    parser.add_argument('--DASH_layer', default = 9, type = int)
+    parser.add_argument('--DASH_layer', default = 6, type = int)
     parser.add_argument('--coefficient', default=None, type = float)
     
     

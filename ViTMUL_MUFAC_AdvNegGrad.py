@@ -618,7 +618,7 @@ if __name__ == '__main__':
     parser.add_argument('--transform', default = 2, type = int)
     parser.add_argument('--save_teacher', default = False, type = boolean_string)
     parser.add_argument('--cf3_top_n', default = 3, type = int)
-    parser.add_argument('--coefficient', default = 3, type = float)
+    parser.add_argument('--coefficient', default = 0.1, type = float)
     
     
     parser.add_argument('--seeds',

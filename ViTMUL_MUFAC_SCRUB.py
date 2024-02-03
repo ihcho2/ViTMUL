@@ -519,7 +519,7 @@ def main(args):
             save_results = csv.writer(file, delimiter='\n')
             save_results.writerow('')
             
-                    
+        dataloader_iterator = iter(forget_dataloader_train)
         num_epochs = args.num_epochs
         
         best_NoMUS = 0
@@ -540,11 +540,11 @@ def main(args):
                 print('-'*77)
                 print('Using manual decay')
                 print('-'*77)
-                if epoch >= 10 and epoch < 20:
+                if epoch >= 0 and epoch < 10:
                     for param_group in scrub_trainer.optimizer.param_groups:
                         param_group['lr'] = args.learning_rate / 10
 
-                elif epoch >= 20:
+                elif epoch >= 10:
                     for param_group in scrub_trainer.optimizer.param_groups:
                         param_group['lr'] = args.learning_rate / 100
                     
